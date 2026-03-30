@@ -1,5 +1,3 @@
-# Change-Management-Software-Module-FRD
-
 # 📄 Change Management System - FRD (Pharmaceutical Industry)
 
 ## 📌 Overview
