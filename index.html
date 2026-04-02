@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PharmaChange — Change Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f8f7f4;
+    --surface: #ffffff;
+    --surface2: #f1f0ec;
+    --border: rgba(0,0,0,0.09);
+    --border2: rgba(0,0,0,0.14);
+    --text: #1a1a18;
+    --text2: #5c5c58;
+    --text3: #9a9a94;
+    --blue: #185FA5;
+    --blue-bg: #E6F1FB;
+    --blue-text: #0C447C;
+    --green: #3B6D11;
+    --green-bg: #EAF3DE;
+    --green-text: #27500A;
+    --amber: #854F0B;
+    --amber-bg: #FAEEDA;
+    --amber-text: #633806;
+    --red: #A32D2D;
+    --red-bg: #FCEBEB;
+    --red-text: #791F1F;
+    --gray-bg: #F1EFE8;
+    --gray-text: #5F5E5A;
+    --radius: 8px;
+    --radius-lg: 12px;
+    --sidebar-w: 230px;
+    --header-h: 58px;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  }
+  body { font-family: var(--font); font-size: 14px; color: var(--text); background: var(--bg); line-height: 1.5; }
+  #app { display: flex; min-height: 100vh; }
+
+  /* SIDEBAR */
+  #sidebar {
+    width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 50;
+  }
+  .sidebar-logo { padding: 20px 18px 16px; border-bottom: 1px solid var(--border); }
+  .sidebar-logo .brand { font-size: 15px; font-weight: 600; color: var(--text); letter-spacing: -.01em; }
+  .sidebar-logo .brand span { color: var(--blue); }
+  .sidebar-logo .sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .nav-section { padding: 14px 18px 5px; font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .07em; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; padding: 9px 18px; cursor: pointer;
+    font-size: 13px; color: var(--text2); border-left: 2px solid transparent; transition: all .15s;
+    text-decoration: none;
+  }
+  .nav-item:hover { background: var(--bg); color: var(--text); }
+  .nav-item.active { background: var(--blue-bg); color: var(--blue-text); border-left-color: var(--blue); font-weight: 500; }
+  .nav-item svg { flex-shrink: 0; opacity: .75; }
+  .nav-item.active svg { opacity: 1; }
+  .sidebar-footer { margin-top: auto; padding: 14px 18px; border-top: 1px solid var(--border); }
+  .user-card { display: flex; align-items: center; gap: 10px; }
+  .avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; }
+  .avatar-blue { background: var(--blue-bg); color: var(--blue-text); }
+  .user-name { font-size: 12px; font-weight: 500; }
+  .user-role { font-size: 11px; color: var(--text3); }
+
+  /* MAIN */
+  #main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+  #topbar {
+    height: var(--header-h); background: var(--surface); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; padding: 0 24px; gap: 12px; position: sticky; top: 0; z-index: 40;
+  }
+  #topbar h1 { font-size: 15px; font-weight: 600; flex: 1; letter-spacing: -.01em; }
+  #content { flex: 1; padding: 24px; }
+
+  /* VIEWS */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* METRICS */
+  .metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 22px; }
+  .metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; box-shadow: var(--shadow); }
+  .metric-card .lbl { font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
+  .metric-card .val { font-size: 28px; font-weight: 600; letter-spacing: -.02em; }
+  .metric-card .sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+  .metric-card .trend { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; margin-top: 6px; }
+
+  /* CARD */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; margin-bottom: 18px; box-shadow: var(--shadow); }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 16px; text-transform: uppercase; letter-spacing: .04em; }
+
+  /* TABLE */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th { text-align: left; padding: 8px 12px; font-size: 10px; font-weight: 600; color: var(--text3); border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: .05em; }
+  tbody td { padding: 11px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: var(--bg); }
+
+  /* BADGES */
+  .badge { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 99px; font-size: 11px; font-weight: 500; }
+  .badge-blue { background: var(--blue-bg); color: var(--blue-text); }
+  .badge-green { background: var(--green-bg); color: var(--green-text); }
+  .badge-amber { background: var(--amber-bg); color: var(--amber-text); }
+  .badge-red { background: var(--red-bg); color: var(--red-text); }
+  .badge-gray { background: var(--gray-bg); color: var(--gray-text); }
+
+  /* RISK */
+  .risk-low { color: var(--green); font-weight: 500; }
+  .risk-med { color: var(--amber); font-weight: 500; }
+  .risk-high { color: var(--red); font-weight: 500; }
+
+  /* BUTTONS */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
+    border-radius: var(--radius); border: 1px solid var(--border2); cursor: pointer;
+    font-size: 13px; font-weight: 500; font-family: var(--font); background: var(--surface);
+    color: var(--text); transition: all .12s; white-space: nowrap;
+  }
+  .btn:hover { background: var(--bg); }
+  .btn:active { transform: scale(.98); }
+  .btn-primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .btn-primary:hover { background: var(--blue-text); border-color: var(--blue-text); }
+  .btn-success { background: var(--green); color: #fff; border-color: var(--green); }
+  .btn-success:hover { background: var(--green-text); }
+  .btn-danger { background: var(--red); color: #fff; border-color: var(--red); }
+  .btn-danger:hover { background: var(--red-text); }
+  .btn-sm { padding: 5px 10px; font-size: 11px; }
+
+  /* FORMS */
+  .form-group { margin-bottom: 15px; }
+  .form-group label { display: block; font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 5px; }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 9px 11px; border: 1px solid var(--border2);
+    border-radius: var(--radius); font-size: 13px; font-family: var(--font);
+    background: var(--surface); color: var(--text); outline: none; transition: border .15s;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    border-color: var(--blue); box-shadow: 0 0 0 3px rgba(24,95,165,.1);
+  }
+  .form-group input[readonly] { background: var(--bg); color: var(--text2); cursor: default; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .required { color: var(--red); }
+
+  /* MODAL */
+  #overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4);
+    z-index: 200; align-items: center; justify-content: center;
+    backdrop-filter: blur(2px);
+  }
+  #overlay.open { display: flex; }
+  #modal {
+    background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border);
+    padding: 24px 26px; width: 520px; max-width: 95vw; max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,.15);
+    animation: modalIn .2s ease;
+  }
+  @keyframes modalIn { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  #modal h2 { font-size: 16px; font-weight: 600; margin-bottom: 18px; letter-spacing: -.01em; }
+  .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .error-box { padding: 9px 12px; background: var(--red-bg); border-radius: var(--radius); font-size: 12px; color: var(--red); margin-bottom: 10px; display: none; border: 1px solid rgba(163,45,45,.2); }
+
+  /* APPROVAL CARDS */
+  .approval-card { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; margin-bottom: 14px; background: var(--surface); box-shadow: var(--shadow); }
+  .approval-card.pending { border-left: 3px solid var(--blue); }
+  .approval-card.approved { border-left: 3px solid var(--green); }
+  .approval-card.rejected { border-left: 3px solid var(--red); }
+
+  /* AUDIT */
+  .audit-row { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
+  .audit-row:last-child { border-bottom: none; }
+  .audit-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); margin-top: 5px; flex-shrink: 0; }
+  .audit-meta { font-size: 11px; color: var(--text3); margin-top: 3px; font-family: var(--mono); }
+
+  /* WORKFLOW STATUS BAR */
+  .status-flow { display: flex; align-items: center; gap: 0; margin-bottom: 22px; }
+  .status-step { flex: 1; text-align: center; padding: 9px 6px; font-size: 11px; font-weight: 500; background: var(--surface); color: var(--text3); border: 1px solid var(--border); position: relative; }
+  .status-step:not(:first-child) { border-left: none; }
+  .status-step:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+  .status-step:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+  .status-step.done { background: var(--green-bg); color: var(--green-text); border-color: #C0DD97; }
+  .status-step.current { background: var(--blue-bg); color: var(--blue-text); border-color: #B5D4F4; }
+
+  /* DIVIDER */
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+  /* NOTIFICATION BELL */
+  .notif-badge { background: var(--red); color: #fff; border-radius: 99px; font-size: 10px; font-weight: 600; padding: 1px 5px; margin-left: 4px; }
+
+  /* PROGRESS BARS */
+  .prog-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 13px; }
+  .prog-bar { width: 110px; height: 6px; border-radius: 3px; background: var(--bg); overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 3px; }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    :root { --sidebar-w: 0px; }
+    #sidebar { display: none; }
+    #main { margin-left: 0; }
+    .metric-grid { grid-template-columns: repeat(2, 1fr); }
+    .form-row { grid-template-columns: 1fr; }
+  }
+
+  /* TOAST */
+  #toast { position: fixed; bottom: 24px; right: 24px; z-index: 999; transform: translateY(80px); opacity: 0; transition: all .3s; }
+  #toast.show { transform: translateY(0); opacity: 1; }
+  .toast-inner { background: #1a1a18; color: #fff; padding: 11px 18px; border-radius: var(--radius); font-size: 13px; font-weight: 500; box-shadow: 0 4px 20px rgba(0,0,0,.25); }
+
+  /* SEARCH */
+  .search-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .search-bar input { flex: 1; padding: 8px 12px; border: 1px solid var(--border2); border-radius: var(--radius); font-size: 13px; font-family: var(--font); background: var(--surface); color: var(--text); outline: none; }
+  .search-bar input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(24,95,165,.1); }
+  .search-bar select { padding: 8px 10px; border: 1px solid var(--border2); border-radius: var(--radius); font-size: 13px; font-family: var(--font); background: var(--surface); color: var(--text); outline: none; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="sidebar-logo">
+      <div class="brand">Pharma<span>Change</span></div>
+      <div class="sub">Change Management System</div>
+    </div>
+    <div style="padding-top:8px">
+      <div class="nav-section">Main</div>
+      <div class="nav-item active" onclick="nav('dashboard',this)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity=".6"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity=".6"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity=".3"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item" onclick="nav('changes',this)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="2" rx="1" fill="currentColor"/><rect x="2" y="7" width="9" height="2" rx="1" fill="currentColor" opacity=".7"/><rect x="2" y="12" width="6" height="2" rx="1" fill="currentColor" opacity=".4"/></svg>
+        Change Requests
+      </div>
+      <div class="nav-item" onclick="nav('approval',this)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><polyline points="5,8 7,10 11,6" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+        Approvals
+        <span class="notif-badge" id="pending-count">0</span>
+      </div>
+      <div class="nav-section">Compliance</div>
+      <div class="nav-item" onclick="nav('audit',this)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="3" y="2" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/><line x1="5" y1="6" x2="11" y2="6" stroke="currentColor" stroke-width="1.2"/><line x1="5" y1="9" x2="9" y2="9" stroke="currentColor" stroke-width="1.2"/></svg>
+        Audit Trail
+      </div>
+      <div class="nav-item" onclick="nav('users',this)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M1 13c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="12" cy="5" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M12 9c1.7 0 3 1.3 3 3" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+        User Management
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="avatar avatar-blue">QA</div>
+        <div>
+          <div class="user-name">QA Admin</div>
+          <div class="user-role">Quality Assurance</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main">
+    <div id="topbar">
+      <h1 id="page-title">Dashboard</h1>
+      <div id="topbar-actions"></div>
+    </div>
+    <div id="content">
+
+      <!-- DASHBOARD -->
+      <div id="view-dashboard" class="view active">
+        <div class="metric-grid">
+          <div class="metric-card">
+            <div class="lbl">Total Requests</div>
+            <div class="val" id="m-total">0</div>
+            <div class="sub">This quarter</div>
+          </div>
+          <div class="metric-card">
+            <div class="lbl">Pending Approval</div>
+            <div class="val" id="m-pending" style="color:var(--amber)">0</div>
+            <div class="sub">Awaiting action</div>
+          </div>
+          <div class="metric-card">
+            <div class="lbl">Approved / Closed</div>
+            <div class="val" id="m-approved" style="color:var(--green)">0</div>
+            <div class="sub">Implemented or closed</div>
+          </div>
+          <div class="metric-card">
+            <div class="lbl">Rejected</div>
+            <div class="val" id="m-rejected" style="color:var(--red)">0</div>
+            <div class="sub">Requires re-submission</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+          <div class="card">
+            <div class="card-title">Recent Change Requests</div>
+            <table>
+              <thead><tr><th>ID</th><th>Title</th><th>Status</th><th>Risk</th></tr></thead>
+              <tbody id="dash-recent"></tbody>
+            </table>
+          </div>
+          <div>
+            <div class="card">
+              <div class="card-title">Workflow Breakdown</div>
+              <div id="workflow-bars"></div>
+            </div>
+            <div class="card">
+              <div class="card-title">Pending Tasks</div>
+              <div id="pending-tasks"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHANGE REQUESTS -->
+      <div id="view-changes" class="view">
+        <div class="search-bar">
+          <input type="text" id="search-input" placeholder="Search by title, ID or department…" oninput="renderChanges()">
+          <select id="filter-status" onchange="renderChanges()">
+            <option value="">All Statuses</option>
+            <option>Draft</option><option>Submitted</option><option>In Review</option>
+            <option>Approved</option><option>Rejected</option><option>Closed</option>
+          </select>
+          <select id="filter-risk" onchange="renderChanges()">
+            <option value="">All Risk Levels</option>
+            <option>Low</option><option>Medium</option><option>High</option>
+          </select>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <table>
+            <thead><tr><th>Change ID</th><th>Title</th><th>Department</th><th>Risk</th><th>Status</th><th>Submitted By</th><th>Date</th><th></th></tr></thead>
+            <tbody id="changes-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- APPROVALS -->
+      <div id="view-approval" class="view">
+        <div id="approvals-list"></div>
+      </div>
+
+      <!-- AUDIT TRAIL -->
+      <div id="view-audit" class="view">
+        <div class="card">
+          <div class="card-title">Audit Trail — All System Actions</div>
+          <div class="search-bar">
+            <input type="text" id="audit-search" placeholder="Search by user, action, or change ID…" oninput="renderAudit()">
+            <select id="audit-filter" onchange="renderAudit()">
+              <option value="">All Actions</option>
+              <option>Submissions</option><option>Approvals</option><option>Rejections</option>
+            </select>
+          </div>
+          <div id="audit-list"></div>
+          <div style="margin-top:14px;padding:10px 12px;background:var(--bg);border-radius:var(--radius);font-size:11px;color:var(--text3);border:1px solid var(--border)">
+            ⚠ Audit logs are read-only and tamper-evident per 21 CFR Part 11. No modifications are permitted.
+            All entries are cryptographically timestamped and linked to the authenticated user session.
+          </div>
+        </div>
+      </div>
+
+      <!-- USER MANAGEMENT -->
+      <div id="view-users" class="view">
+        <div class="card">
+          <div class="card-title">User Management</div>
+          <table>
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Last Login</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:10px"><div class="avatar" style="background:var(--blue-bg);color:var(--blue-text)">AR</div><div><div style="font-weight:500">Ananya Rao</div><div style="font-size:11px;color:var(--text3)">System Administrator</div></div></div></td>
+                <td style="color:var(--text2);font-family:var(--mono);font-size:12px">a.rao@pharma.com</td>
+                <td><span class="badge badge-blue">Admin</span></td>
+                <td><span class="badge badge-green">Active</span></td>
+                <td style="color:var(--text3);font-size:12px">Today, 09:12</td>
+              </tr>
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:10px"><div class="avatar" style="background:var(--green-bg);color:var(--green-text)">VS</div><div><div style="font-weight:500">Varun S</div><div style="font-size:11px;color:var(--text3)">Change Requester</div></div></div></td>
+                <td style="color:var(--text2);font-family:var(--mono);font-size:12px">v.s@pharma.com</td>
+                <td><span class="badge badge-gray">Requester</span></td>
+                <td><span class="badge badge-green">Active</span></td>
+                <td style="color:var(--text3);font-size:12px">Today, 08:45</td>
+              </tr>
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:10px"><div class="avatar" style="background:var(--amber-bg);color:var(--amber-text)">PK</div><div><div style="font-weight:500">Priya Kumar</div><div style="font-size:11px;color:var(--text3)">Change Reviewer</div></div></div></td>
+                <td style="color:var(--text2);font-family:var(--mono);font-size:12px">p.kumar@pharma.com</td>
+                <td><span class="badge badge-amber">Reviewer</span></td>
+                <td><span class="badge badge-green">Active</span></td>
+                <td style="color:var(--text3);font-size:12px">Yesterday, 17:30</td>
+              </tr>
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:10px"><div class="avatar" style="background:var(--red-bg);color:var(--red-text)">RM</div><div><div style="font-weight:500">Rajan Mehta</div><div style="font-size:11px;color:var(--text3)">QA Approver</div></div></div></td>
+                <td style="color:var(--text2);font-family:var(--mono);font-size:12px">r.mehta@pharma.com</td>
+                <td><span class="badge badge-red">Approver (QA)</span></td>
+                <td><span class="badge badge-green">Active</span></td>
+                <td style="color:var(--text3);font-size:12px">Today, 10:01</td>
+              </tr>
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:10px"><div class="avatar" style="background:var(--gray-bg);color:var(--gray-text)">SN</div><div><div style="font-weight:500">Sita Nair</div><div style="font-size:11px;color:var(--text3)">Compliance Auditor</div></div></div></td>
+                <td style="color:var(--text2);font-family:var(--mono);font-size:12px">s.nair@pharma.com</td>
+                <td><span class="badge badge-gray">Auditor</span></td>
+                <td><span class="badge badge-green">Active</span></td>
+                <td style="color:var(--text3);font-size:12px">Mon, 16:30</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL -->
+  <div id="overlay" onclick="closeModalOutside(event)">
+    <div id="modal">
+      <h2>New Change Request</h2>
+      <div class="form-row">
+        <div class="form-group"><label>Change ID</label><input type="text" id="cr-id" readonly></div>
+        <div class="form-group"><label>Submission Date</label><input type="text" id="cr-date" readonly></div>
+      </div>
+      <div class="form-group"><label>Title <span class="required">*</span></label><input type="text" id="cr-title" placeholder="Brief description of the change"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Department <span class="required">*</span></label>
+          <select id="cr-dept">
+            <option value="">Select department…</option>
+            <option>Quality Assurance</option><option>Manufacturing</option>
+            <option>Regulatory Affairs</option><option>Warehouse</option><option>Engineering</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Risk Classification <span class="required">*</span></label>
+          <select id="cr-risk">
+            <option value="">Select risk level…</option>
+            <option>Low</option><option>Medium</option><option>High</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label>Change Description <span class="required">*</span></label><textarea id="cr-desc" rows="3" placeholder="Describe the change in detail including scope, rationale, and expected outcome"></textarea></div>
+      <div class="form-group"><label>Impacted Systems / Departments</label><input type="text" id="cr-impact" placeholder="e.g. QC Lab, LIMS, SOP-042, Batch Records"></div>
+      <div class="form-group"><label>Attach Supporting Documents</label><input type="file" style="font-size:12px;color:var(--text2)"></div>
+      <div class="error-box" id="modal-error"></div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn" onclick="saveDraft()">Save as Draft</button>
+        <button class="btn btn-primary" onclick="submitCR()">Submit Request</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast"><div class="toast-inner" id="toast-msg"></div></div>
+
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────
+let changes = [
+  {id:'CR-2024',title:'SOP Update – Batch Release Process',dept:'Quality Assurance',risk:'High',status:'Submitted',by:'Varun S',date:'01 Apr 2026',desc:'Update SOP-042 to align with ICH Q10 guidelines. Current process has gaps in batch record review steps.'},
+  {id:'CR-2023',title:'Equipment Calibration Frequency Change',dept:'Engineering',risk:'Medium',status:'In Review',by:'Priya Kumar',date:'29 Mar 2026',desc:'Reduce calibration frequency for spectrophotometers from monthly to quarterly based on OQ data.'},
+  {id:'CR-2022',title:'Label Template Revision v4.1',dept:'Regulatory Affairs',risk:'Low',status:'Approved',by:'Varun S',date:'25 Mar 2026',desc:'Update label template to include 2D barcode and revised storage condition icons per EU FMD.'},
+  {id:'CR-2021',title:'HVAC System Maintenance Schedule',dept:'Manufacturing',risk:'Low',status:'Closed',by:'Rajan Mehta',date:'18 Mar 2026',desc:'Extend HVAC filter replacement interval from 3 to 6 months based on particle count trending data.'},
+  {id:'CR-2020',title:'Raw Material Supplier Qualification',dept:'Warehouse',risk:'High',status:'Rejected',by:'Varun S',date:'10 Mar 2026',desc:'Add alternate supplier for excipient X. Rejected due to insufficient COA and stability data.'},
+];
+
+let auditLogs = [
+  {user:'Rajan Mehta',action:'Approved CR-2022 with electronic signature',time:'25 Mar 2026, 15:42',id:'CR-2022',type:'Approvals'},
+  {user:'Priya Kumar',action:'Completed impact assessment for CR-2023',time:'30 Mar 2026, 11:18',id:'CR-2023',type:'Submissions'},
+  {user:'Varun S',action:'Submitted CR-2024 for review',time:'01 Apr 2026, 09:05',id:'CR-2024',type:'Submissions'},
+  {user:'System',action:'Auto-escalated CR-2024 to QA approver queue',time:'01 Apr 2026, 09:06',id:'CR-2024',type:'Submissions'},
+  {user:'Sita Nair',action:'Exported compliance audit report Q1 2026',time:'01 Apr 2026, 14:00',id:'—',type:'Submissions'},
+  {user:'Rajan Mehta',action:'Rejected CR-2020: insufficient COA and stability data',time:'11 Mar 2026, 10:30',id:'CR-2020',type:'Rejections'},
+  {user:'Varun S',action:'Submitted CR-2021 for review',time:'15 Mar 2026, 09:10',id:'CR-2021',type:'Submissions'},
+  {user:'Ananya Rao',action:'Created user account for Sita Nair (Auditor)',time:'01 Mar 2026, 10:00',id:'—',type:'Submissions'},
+];
+
+// ── HELPERS ───────────────────────────────────────────────────────────────
+const statusBadge = s => ({
+  'Draft':'<span class="badge badge-gray">Draft</span>',
+  'Submitted':'<span class="badge badge-blue">Submitted</span>',
+  'In Review':'<span class="badge badge-amber">In Review</span>',
+  'Approved':'<span class="badge badge-green">Approved</span>',
+  'Closed':'<span class="badge badge-green">Closed</span>',
+  'Rejected':'<span class="badge badge-red">Rejected</span>',
+}[s] || s);
+
+const riskClass = r => ({'Low':'risk-low','Medium':'risk-med','High':'risk-high'}[r] || '');
+
+function toast(msg) {
+  document.getElementById('toast-msg').textContent = msg;
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function now() {
+  const d = new Date();
+  return '02 Apr 2026, ' + d.toTimeString().slice(0,5);
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────
+function nav(v, el) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (el) el.classList.add('active');
+  document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
+  document.getElementById('view-' + v).classList.add('active');
+  const titles = {dashboard:'Dashboard',changes:'Change Requests',approval:'Approvals',audit:'Audit Trail',users:'User Management'};
+  document.getElementById('page-title').textContent = titles[v];
+  const actions = document.getElementById('topbar-actions');
+  actions.innerHTML = v === 'changes' ? '<button class="btn btn-primary" onclick="openModal()">+ New Change Request</button>' : '';
+  if (v === 'dashboard') renderDashboard();
+  if (v === 'changes') renderChanges();
+  if (v === 'approval') renderApprovals();
+  if (v === 'audit') renderAudit();
+  updatePendingCount();
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────
+function renderDashboard() {
+  const total = changes.length;
+  const pending = changes.filter(c => c.status === 'Submitted' || c.status === 'In Review').length;
+  const approved = changes.filter(c => c.status === 'Approved' || c.status === 'Closed').length;
+  const rejected = changes.filter(c => c.status === 'Rejected').length;
+  document.getElementById('m-total').textContent = total;
+  document.getElementById('m-pending').textContent = pending;
+  document.getElementById('m-approved').textContent = approved;
+  document.getElementById('m-rejected').textContent = rejected;
+
+  // Recent table
+  const recent = [...changes].slice(0, 5);
+  document.getElementById('dash-recent').innerHTML = recent.map(c => `<tr>
+    <td style="font-family:var(--mono);font-size:11px;color:var(--text2)">${c.id}</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.title}</td>
+    <td>${statusBadge(c.status)}</td>
+    <td><span class="${riskClass(c.risk)}">${c.risk}</span></td>
+  </tr>`).join('');
+
+  // Workflow bars
+  const statuses = ['Draft','Submitted','In Review','Approved','Rejected','Closed'];
+  const colors = {'Draft':'#888780','Submitted':'#378ADD','In Review':'#EF9F27','Approved':'#639922','Rejected':'#E24B4A','Closed':'#3B6D11'};
+  const counts = {};
+  statuses.forEach(s => { counts[s] = changes.filter(c => c.status === s).length; });
+  const maxCount = Math.max(...Object.values(counts), 1);
+  document.getElementById('workflow-bars').innerHTML = statuses.map(s => `
+    <div class="prog-row">
+      <span>${s}</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="prog-bar"><div class="prog-fill" style="width:${Math.round(counts[s]/maxCount*100)}%;background:${colors[s]}"></div></div>
+        <span style="font-size:11px;color:var(--text3);min-width:16px;text-align:right">${counts[s]}</span>
+      </div>
+    </div>`).join('');
+
+  // Pending tasks
+  const pend = changes.filter(c => c.status === 'Submitted' || c.status === 'In Review');
+  document.getElementById('pending-tasks').innerHTML = pend.length === 0
+    ? '<div style="font-size:13px;color:var(--text3);padding:8px 0">No pending tasks. All caught up!</div>'
+    : pend.map(c => `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:var(--bg);border-radius:var(--radius);margin-bottom:8px">
+        <span style="font-size:12px">${c.status === 'Submitted' ? 'QA Approval required' : 'Review pending'} — ${c.id}</span>
+        <span class="badge ${c.risk === 'High' ? 'badge-red' : 'badge-amber'}">${c.risk}</span>
+      </div>`).join('');
+}
+
+// ── CHANGE REQUESTS ───────────────────────────────────────────────────────
+function renderChanges() {
+  const q = (document.getElementById('search-input')?.value || '').toLowerCase();
+  const fs = document.getElementById('filter-status')?.value || '';
+  const fr = document.getElementById('filter-risk')?.value || '';
+  let filtered = changes.filter(c => {
+    const matchQ = !q || c.id.toLowerCase().includes(q) || c.title.toLowerCase().includes(q) || c.dept.toLowerCase().includes(q);
+    const matchS = !fs || c.status === fs;
+    const matchR = !fr || c.risk === fr;
+    return matchQ && matchS && matchR;
+  });
+  document.getElementById('changes-tbody').innerHTML = filtered.length === 0
+    ? '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:24px">No change requests match your filters.</td></tr>'
+    : filtered.map(c => `<tr>
+        <td style="font-family:var(--mono);font-size:11px;color:var(--text2)">${c.id}</td>
+        <td style="max-width:200px"><div style="font-weight:500">${c.title}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${c.desc ? c.desc.substring(0,55)+'…' : ''}</div></td>
+        <td style="color:var(--text2)">${c.dept}</td>
+        <td><span class="${riskClass(c.risk)}">${c.risk}</span></td>
+        <td>${statusBadge(c.status)}</td>
+        <td style="color:var(--text2)">${c.by}</td>
+        <td style="color:var(--text3);font-size:12px">${c.date}</td>
+        <td><button class="btn btn-sm" onclick="viewDetail('${c.id}')">View</button></td>
+      </tr>`).join('');
+}
+
+function viewDetail(id) {
+  const c = changes.find(x => x.id === id);
+  if (!c) return;
+  const modal = document.getElementById('modal');
+  const overlay = document.getElementById('overlay');
+  modal.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+      <div>
+        <div style="font-family:var(--mono);font-size:12px;color:var(--text3);margin-bottom:4px">${c.id} · ${c.date}</div>
+        <h2 style="margin:0">${c.title}</h2>
+      </div>
+      ${statusBadge(c.status)}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+      <div style="background:var(--bg);border-radius:var(--radius);padding:12px"><div style="font-size:11px;color:var(--text3);margin-bottom:4px">DEPARTMENT</div><div style="font-weight:500">${c.dept}</div></div>
+      <div style="background:var(--bg);border-radius:var(--radius);padding:12px"><div style="font-size:11px;color:var(--text3);margin-bottom:4px">RISK LEVEL</div><div class="${riskClass(c.risk)}">${c.risk}</div></div>
+    </div>
+    <div style="margin-bottom:14px"><div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:6px">Description</div><div style="font-size:13px;color:var(--text2);line-height:1.6">${c.desc || '—'}</div></div>
+    <div style="margin-bottom:14px"><div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:6px">Submitted By</div><div style="font-size:13px">${c.by}</div></div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal()">Close</button></div>`;
+  overlay.classList.add('open');
+}
+
+// ── APPROVALS ─────────────────────────────────────────────────────────────
+function renderApprovals() {
+  const pending = changes.filter(c => c.status === 'Submitted' || c.status === 'In Review');
+  const done = changes.filter(c => c.status === 'Approved' || c.status === 'Rejected');
+  let html = `<div class="card-title" style="margin-bottom:16px">Pending Approvals (${pending.length})</div>`;
+  if (pending.length === 0) {
+    html += '<div class="card"><div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">No pending approvals. All change requests have been processed.</div></div>';
+  } else {
+    html += pending.map(c => `<div class="approval-card pending">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div><div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-bottom:3px">${c.id} · ${c.date}</div><div style="font-weight:600;font-size:14px">${c.title}</div></div>
+        ${statusBadge(c.status)}
+      </div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Dept: ${c.dept} · Risk: <span class="${riskClass(c.risk)}">${c.risk}</span> · By: ${c.by}</div>
+      <div style="background:var(--bg);border-radius:var(--radius);padding:10px;font-size:12px;color:var(--text2);margin-bottom:12px">${c.desc || 'No description provided.'}</div>
+      <div style="margin-bottom:10px"><input type="text" id="cmt-${c.id}" placeholder="Add comment (mandatory for rejection)…" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:var(--radius);font-size:12px;font-family:var(--font);background:var(--surface);color:var(--text);outline:none"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-success" style="font-size:12px" onclick="approveChange('${c.id}')">✓ Approve with E-Signature</button>
+        <button class="btn btn-danger" style="font-size:12px" onclick="rejectChange('${c.id}')">✗ Reject</button>
+      </div>
+    </div>`).join('');
+  }
+  if (done.length > 0) {
+    html += `<div class="card-title" style="margin:20px 0 14px">Recently Processed (${done.length})</div>`;
+    html += done.map(c => `<div class="approval-card ${c.status === 'Approved' ? 'approved' : 'rejected'}">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-bottom:2px">${c.id}</div><div style="font-weight:500">${c.title}</div></div>
+        ${statusBadge(c.status)}
+      </div>
+    </div>`).join('');
+  }
+  document.getElementById('approvals-list').innerHTML = html;
+}
+
+function approveChange(id) {
+  const c = changes.find(x => x.id === id);
+  if (!c) return;
+  c.status = 'Approved';
+  auditLogs.unshift({user:'QA Admin',action:`Approved ${id} with electronic signature`,time:now(),id,type:'Approvals'});
+  toast(`✓ ${id} approved and logged with e-signature`);
+  renderApprovals();
+  updatePendingCount();
+}
+
+function rejectChange(id) {
+  const el = document.getElementById('cmt-' + id);
+  if (!el || !el.value.trim()) {
+    if (el) { el.style.borderColor = 'var(--red)'; el.focus(); }
+    toast('⚠ A comment is required to reject a change request');
+    return;
+  }
+  const c = changes.find(x => x.id === id);
+  if (!c) return;
+  c.status = 'Rejected';
+  auditLogs.unshift({user:'QA Admin',action:`Rejected ${id}: ${el.value.trim()}`,time:now(),id,type:'Rejections'});
+  toast(`${id} rejected with comment logged`);
+  renderApprovals();
+  updatePendingCount();
+}
+
+// ── AUDIT TRAIL ───────────────────────────────────────────────────────────
+function renderAudit() {
+  const q = (document.getElementById('audit-search')?.value || '').toLowerCase();
+  const ft = document.getElementById('audit-filter')?.value || '';
+  const filtered = auditLogs.filter(l => {
+    const matchQ = !q || l.user.toLowerCase().includes(q) || l.action.toLowerCase().includes(q) || l.id.toLowerCase().includes(q);
+    const matchT = !ft || l.type === ft;
+    return matchQ && matchT;
+  });
+  document.getElementById('audit-list').innerHTML = filtered.length === 0
+    ? '<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">No audit entries match your search.</div>'
+    : filtered.map(l => `<div class="audit-row">
+        <div class="audit-dot"></div>
+        <div style="flex:1">
+          <div style="font-size:13px"><span style="font-weight:500">${l.user}</span> — ${l.action}</div>
+          <div class="audit-meta">${l.time} · Change ID: ${l.id}</div>
+        </div>
+      </div>`).join('');
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────────
+function openModal() {
+  const newId = 'CR-' + (2024 + changes.length + 1);
+  document.getElementById('cr-id').value = newId;
+  document.getElementById('cr-date').value = '02 Apr 2026';
+  document.getElementById('cr-title').value = '';
+  document.getElementById('cr-dept').value = '';
+  document.getElementById('cr-risk').value = '';
+  document.getElementById('cr-desc').value = '';
+  document.getElementById('cr-impact').value = '';
+  document.getElementById('modal-error').style.display = 'none';
+  // Reset modal to form state in case it was used for detail view
+  if (!document.getElementById('cr-title')) location.reload();
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeModal() { document.getElementById('overlay').classList.remove('open'); }
+function closeModalOutside(e) { if (e.target === document.getElementById('overlay')) closeModal(); }
+
+function submitCR() {
+  const t = document.getElementById('cr-title')?.value?.trim();
+  const d = document.getElementById('cr-dept')?.value;
+  const r = document.getElementById('cr-risk')?.value;
+  const desc = document.getElementById('cr-desc')?.value?.trim();
+  const err = document.getElementById('modal-error');
+  if (!t || !d || !r || !desc) {
+    err.textContent = 'Please fill all required fields (Title, Department, Risk Classification, Description) before submitting.';
+    err.style.display = 'block';
+    return;
+  }
+  const newId = document.getElementById('cr-id').value;
+  const impact = document.getElementById('cr-impact')?.value || '';
+  changes.unshift({id:newId,title:t,dept:d,risk:r,status:'Submitted',by:'QA Admin',date:'02 Apr 2026',desc});
+  auditLogs.unshift({user:'QA Admin',action:`Submitted ${newId} – ${t}`,time:now(),id:newId,type:'Submissions'});
+  closeModal();
+  toast(`✓ ${newId} submitted successfully`);
+  nav('changes', document.querySelectorAll('.nav-item')[1]);
+  updatePendingCount();
+}
+
+function saveDraft() {
+  const t = document.getElementById('cr-title')?.value?.trim();
+  const err = document.getElementById('modal-error');
+  if (!t) { err.textContent = 'Please enter a title to save as draft.'; err.style.display = 'block'; return; }
+  const newId = document.getElementById('cr-id').value;
+  changes.unshift({id:newId,title:t,dept:document.getElementById('cr-dept')?.value||'—',risk:document.getElementById('cr-risk')?.value||'—',status:'Draft',by:'QA Admin',date:'02 Apr 2026',desc:document.getElementById('cr-desc')?.value||''});
+  auditLogs.unshift({user:'QA Admin',action:`Saved draft ${newId} – ${t}`,time:now(),id:newId,type:'Submissions'});
+  closeModal();
+  toast(`Draft ${newId} saved`);
+  nav('changes', document.querySelectorAll('.nav-item')[1]);
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────
+function updatePendingCount() {
+  const n = changes.filter(c => c.status === 'Submitted' || c.status === 'In Review').length;
+  const badge = document.getElementById('pending-count');
+  badge.textContent = n;
+  badge.style.display = n > 0 ? 'inline' : 'none';
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+renderDashboard();
+updatePendingCount();
+</script>
+</body>
+</html>
